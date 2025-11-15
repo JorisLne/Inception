@@ -1,0 +1,4 @@
+# Keep image context minimal
+.git
+.gitignore
+*.md

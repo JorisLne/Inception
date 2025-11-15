@@ -1,0 +1,75 @@
+services:
+  nginx:
+    container_name: nginx
+    build: ./requirements/nginx
+    image: nginx
+    depends_on:
+      wordpress:
+        condition: service_healthy
+    ports:
+      - 443:443 #HOST_PORT:CONTAINER_PORT
+    env_file:
+      - .env
+    volumes:
+      - wordpress_data:/var/www/wordpress
+    restart: always
+    networks:
+      - inception
+
+  wordpress:
+    container_name: wordpress
+    build: ./requirements/wordpress
+    image: wordpress
+    depends_on:
+      mariadb:
+        condition: service_healthy
+    restart: always
+    expose:
+      - "9000"
+    env_file:
+      - .env
+    volumes:
+      - wordpress_data:/var/www/wordpress
+    healthcheck:
+      test: ["CMD-SHELL", "test -f /var/www/wordpress/wp-config.php"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - inception
+
+  mariadb:
+    container_name: mariadb
+    build: ./requirements/mariadb
+    image: mariadb
+    volumes:
+      - mariadb_data:/var/lib/mysql
+    networks:
+      - inception
+    restart: always
+    env_file:
+      - .env
+    healthcheck:
+      test: ["CMD", "mariadb-admin", "ping", "-h", "localhost", "-u", "${MYSQL_ADMIN_USER}", "-p${MYSQL_ADMIN_PASSWORD}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  mariadb_data:
+    driver: local
+    driver_opts:
+      type: none
+      device: ${DATA_PATH}/mariadb
+      o: bind
+
+  wordpress_data:
+    driver: local
+    driver_opts:
+      type: none
+      device: ${DATA_PATH}/wordpress
+      o: bind
+
+networks:
+  inception:
+    driver: bridge

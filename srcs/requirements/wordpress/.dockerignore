@@ -1,0 +1,5 @@
+# Keep build context lean and free of secrets
+.git
+.gitignore
+*.md
+Dockerfile

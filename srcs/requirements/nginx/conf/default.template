@@ -1,0 +1,34 @@
+server {
+    listen 443 ssl;
+    listen [::]:443 ssl;
+
+	ssl_certificate  /etc/nginx/ssl/certs/inception.crt;
+	ssl_certificate_key  /etc/nginx/ssl/private/inception.key;
+    ssl_protocols TLSv1.3;
+
+    root /var/www/wordpress;
+    index index.php index.html index.htm;
+
+    server_name ${_DOMAIN_NAME} www.${_DOMAIN_NAME};
+
+    location / {
+        try_files $uri $uri/ /index.php?$args;
+    }
+
+    location ~ \.php$ {
+        include snippets/fastcgi-php.conf;
+
+        # Mitigate redirect loops
+        fastcgi_param HTTPS on;
+        fastcgi_param X-Real-IP $remote_addr;
+        fastcgi_param X-Forwarded-For $proxy_add_x_forwarded_for;
+        fastcgi_param X-Forwarded-Proto $scheme;
+        fastcgi_param HOST $host;
+
+        fastcgi_pass wordpress:9000;
+    }
+
+    location ~ /\.ht {
+        deny all;
+    }
+}
